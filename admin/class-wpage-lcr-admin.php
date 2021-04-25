@@ -55,7 +55,7 @@ class Wpage_Lcr_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		wp_register_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wpage-lcr-admin.css', array(), $this->version, 'all' );
+		wp_register_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wpage-lcr-admin.css', array(), microtime(), 'all' );
 	}
 
 	/**
@@ -64,8 +64,9 @@ class Wpage_Lcr_Admin {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-		wp_register_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wpage-lcr-admin.js', array( 'jquery' ), $this->version, false );
+		wp_register_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wpage-lcr-admin.js', array( 'jquery' ), microtime(), false );
 	}
+	
 
 	function get_post_slug($post_id) {
 		global $wpdb;
@@ -156,24 +157,6 @@ class Wpage_Lcr_Admin {
 		}
 		
 		?>
-		<style>
-			.wpage-show-link {
-				width: 50%;
-				margin: 0 auto;
-			}
-			.wpage-show-link .locked-page-title {
-				font-size: 28px !important;
-				margin-bottom: 18px;
-				border-bottom: 2px solid;
-				color: #ffffff;
-			}
-			.wpage-show-link input{
-				width: 100%;
-				border-width: 2px 2px 2px 2px;
-				border-radius: 6px;
-			}
-		</style>
-
 		<div class="wpage-show-link">
 			<?php
 				
@@ -235,60 +218,64 @@ class Wpage_Lcr_Admin {
 		
 		return $user_id;
 	}
-
-	// Make locked page actions if shortcode not exist
-	function wpage_shortcode_check() {
-		
-		global $post,$wp_query,$wpdb;
-
-		// Get Id depending user login
-		$user_id = $this->wpage_user_id();
-
-		$posts = new WP_Query(['post_type' => 'page','post_status' => 'publish']);
-		
-		if($posts){
-			while($posts->have_posts(  )){
-				$posts->the_post();
-				if ( has_shortcode( get_the_content(), 'wpage_locked' )) {
-					$post_id = get_the_ID(  );
-					// Locked
-					if(!get_post_meta( $post_id, 'wpage_locked', true )){
-						add_post_meta( $post_id, 'wpage_locked', $post_id );
-					}
-		
-					// Check refer count
-					$get_locker = $wpdb->query("SELECT * FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id");
-
-					if($get_locker < get_option( 'wpage_referrals' )){
-
-						if(get_post_meta( $post_id, 'wpage_locked', true )){
-							
-							if(url_to_postid( $this->self_url() ) === $post_id){
-								if(!current_user_can( 'administrator' )){
-									add_filter( 'the_content', function(){
-										$this->show_aff_link();
-									} );
-								}else{
-									return;
-								}
-							}
-						}
-					}else{
-						return;
-					}
-					
-				}else{
-					$post_id = get_the_ID(  );
-					delete_post_meta( $post_id, 'wpage_locked', 'locked' );
-					$wpdb->query("DELETE FROM {$wpdb->prefix}wpage_locker WHERE post_id = $post_id");
-				}
-			}
-		}
-	}
 	
 	// Set for get locked page id
-	function wpage_locked_page(){
-		ob_start();
+	function wpage_locked_page($atts){
+		global $wpdb;
+		// Get Id depending user login
+		$user_id = $this->wpage_user_id();
+		$post_id = get_post()->ID;
+		$table = $wpdb->prefix.'wpage_locked_url';
+
+		$url = '';
+
+		if($atts){
+			$url = $atts['url'];
+		}
+
+		$get = $wpdb->get_var("SELECT ID FROM $table WHERE user_id = $user_id AND post_id = $post_id");
+
+		if(!$get){
+			$wpdb->insert($table, array('user_id' => $user_id, 'post_id' => $post_id, 'url' => $url), array('%d', '%d', '%s'));
+		}
+
+		// Locked
+		if(!get_post_meta( $post_id, 'wpage_locked', true )){
+			add_post_meta( $post_id, 'wpage_locked', $post_id );
+		}
+
+		// Check refer count
+		$get_locker = $wpdb->query("SELECT * FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id");
+
+		if($get_locker < get_option( 'wpage_referrals' )){
+
+			if(get_post_meta( $post_id, 'wpage_locked', true )){
+				
+				if(url_to_postid( $this->self_url() ) === $post_id){
+					// if(!current_user_can( 'administrator' )){}
+					ob_start();
+					wp_enqueue_style( WPAGE_NAME );
+					wp_enqueue_script( WPAGE_NAME );
+					echo '<div class="wpage_contents">';
+					$this->show_aff_link();
+					echo '<a class="lockedLink nolink" href="#">Unlock page content</a>';
+					
+					return ob_get_clean();
+				}
+			}
+		}else{
+			ob_start();
+			wp_enqueue_style( WPAGE_NAME );
+			wp_enqueue_script( WPAGE_NAME );
+
+			$get = $wpdb->get_var("SELECT url FROM {$wpdb->prefix}wpage_locked_url WHERE user_id = $user_id AND post_id = $post_id");
+
+			echo '<div class="wpage_contents">';
+			echo '<a target="_devjoo" class="lockedLink link" href="'.esc_url($get).'">Receive Your Code</a>';
+			echo '</div>';
+			return ob_get_clean();
+		}
+
 		return;
 	}
 

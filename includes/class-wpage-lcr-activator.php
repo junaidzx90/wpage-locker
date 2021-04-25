@@ -42,6 +42,14 @@ class Wpage_Lcr_Activator {
 			PRIMARY KEY (`ID`)) ENGINE = InnoDB";
 			dbDelta($wpage_locked);
 
+		$wpage_locked_url = "CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}wpage_locked_url` (
+			`ID` INT NOT NULL AUTO_INCREMENT,
+			`url` VARCHAR(500) NOT NULL,
+			`user_id` INT NOT NULL,
+			`post_id` INT NOT NULL,
+			PRIMARY KEY (`ID`)) ENGINE = InnoDB";
+			dbDelta($wpage_locked_url);
+
 	}
 
 }

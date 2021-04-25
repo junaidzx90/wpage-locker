@@ -14,6 +14,8 @@
 
 wp_enqueue_style( WPAGE_NAME );
 ?>
+<div class="notice notice-success" style="padding: 5px 10px; width: fit-content;margin-left: 2px;">Developer: <input type="email" name="developer" value="admin@easeare.com" readonly></div>
+
 <h1>WP PAGE LOCKER</h1>
 <hr>
 <div class="wpagewrapper">
@@ -24,13 +26,12 @@ wp_enqueue_style( WPAGE_NAME );
     do_settings_fields( 'wpage-settings', 'wpage_section' );
     submit_button();
     echo '</form>';
-
     ?>
 
     <div class="information">
         <h2>Lock Page</h2>
         <hr>
-        <h4>For wp page: <span style="color:orangered" class="shortcode"> <input type="text" readonly value="[wpage_locked]"> </span></h4>
+        <h4>For wp page: <span style="color:orangered" class="shortcode"> <input type="text" readonly value="[wpage_locked url='example.com']"> </span></h4>
         <small>The page where this shortcode is placed will be locked.!</small>
     </div>
 

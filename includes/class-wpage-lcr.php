@@ -148,12 +148,11 @@ class Wpage_Lcr {
 		$plugin_admin = new Wpage_Lcr_Admin( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'init', $plugin_admin, 'wpage_links_generator' );
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'wpage_menu' );
 		$this->loader->add_action( 'admin_init', $plugin_admin, 'wpage_options' );
-		$this->loader->add_action( 'init', $plugin_admin, 'wpage_shortcode_check' );
-
 	}
 
 	/**
