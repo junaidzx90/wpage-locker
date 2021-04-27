@@ -170,7 +170,11 @@ class Wpage_Lcr_Admin {
 				if(get_option( 'lockedpagetitle' )){
 					echo '<h2 class="locked-page-title"> '.__(str_replace('%visits%', $counts, get_option( 'lockedpagetitle' )), 'wpage-lcr').' </h2>';
 				}
-				echo '<input type="text" value="' .esc_html($link). '" readonly/>';
+				echo '<div class="url_box">';
+				echo '<input id="url" type="text" value="' .esc_html($link). '" readonly/>';
+				echo '<span id="copy_url" onclick="copylink()" onmouseout="outFunc()" >Copy</span>';
+				echo '<span class="lcr_tooltip" id="lcr_tooltip">Copy to clipboard</span>';
+				echo '</div>';
 			 ?>
 		</div>
 		<?php
