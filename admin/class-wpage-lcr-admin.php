@@ -159,10 +159,9 @@ class Wpage_Lcr_Admin {
 		?>
 		<div class="wpage-show-link">
 			<?php
-				
 				$link = site_url().'/lcr/'.$user_id.'/p/'.$post_id;
-				$counts = $wpdb->query("SELECT * FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id");
-
+				$counts = $wpdb->query("SELECT * FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id  AND referer_ip != 'admin_ip'");
+				
 				if(!$counts){
 					$counts = 0;
 				}
@@ -203,20 +202,30 @@ class Wpage_Lcr_Admin {
 		}
 		
 		$user_id = 0;
-		if(isset($_COOKIE['wpage_user_id'])){
-			if(is_user_logged_in(  )){
-				$user_id = get_user_meta( $current_user->ID,'wpage_uid',true );
-				update_user_meta( $current_user->ID,'wpage_uid', $_COOKIE['wpage_user_id'] );
-			}else{
-				$user_id = $_COOKIE['wpage_user_id'];
-			}
-		}else{
-			setcookie('wpage_user_id',rand(),time() + 60 * 60 * 24 * $expiry,'/');
-			$user_id = $_COOKIE['wpage_user_id'];
 
-			if(is_user_logged_in(  )){
-				delete_user_meta( $current_user->ID,'wpage_uid', $user_id );
-				add_user_meta( $current_user->ID,'wpage_uid', $user_id );
+		if(is_user_logged_in(  )){
+
+			if(get_user_meta( $current_user->ID,'wpage_uid',true )){
+				if(!isset($_COOKIE['wpage_user_id'])){
+					setcookie('wpage_user_id',rand(),time() + 60 * 60 * 24 * $expiry,'/');
+				}
+				update_user_meta( $current_user->ID,'wpage_uid', $_COOKIE['wpage_user_id'] );
+				$user_id = get_user_meta( $current_user->ID,'wpage_uid',true );
+			}else{
+				setcookie('wpage_user_id',rand(),time() + 60 * 60 * 24 * $expiry,'/');
+				update_user_meta( $current_user->ID,'wpage_uid', $_COOKIE['wpage_user_id'] );
+				$user_id = get_user_meta( $current_user->ID,'wpage_uid',true );
+			}
+
+		}else{
+
+			if(isset($_COOKIE['wpage_user_id'])){
+				
+				$user_id = $_COOKIE['wpage_user_id'];
+				
+			}else{
+				setcookie('wpage_user_id',rand(),time() + 60 * 60 * 24 * $expiry,'/');
+				$user_id = $_COOKIE['wpage_user_id'];
 			}
 		}
 		
@@ -225,7 +234,7 @@ class Wpage_Lcr_Admin {
 	
 	// Set for get locked page id
 	function wpage_locked_page($atts){
-		global $wpdb;
+		global $wpdb,$current_user;
 		// Get Id depending user login
 		$user_id = $this->wpage_user_id();
 		$post_id = get_post()->ID;
@@ -247,9 +256,18 @@ class Wpage_Lcr_Admin {
 		if(!get_post_meta( $post_id, 'wpage_locked', true )){
 			add_post_meta( $post_id, 'wpage_locked', $post_id );
 		}
+		
+		$myurl = $wpdb->get_var("SELECT ID FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id");
+
+		if(!$myurl){
+			if(current_user_can( 'administrator' )){
+				$lctbl = $wpdb->prefix.'wpage_locker';
+				$wpdb->insert($lctbl, array("owner_id" => $user_id, "post_id" => $post_id, "referer_ip" => "admin_ip"), array("%d","%d","%s"));
+			}
+		}
 
 		// Check refer count
-		$get_locker = $wpdb->query("SELECT * FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id");
+		$get_locker = $wpdb->query("SELECT * FROM {$wpdb->prefix}wpage_locker WHERE owner_id = $user_id AND post_id = $post_id AND referer_ip != 'admin_ip'");
 
 		if($get_locker < get_option( 'wpage_referrals' )){
 
@@ -263,7 +281,7 @@ class Wpage_Lcr_Admin {
 					echo '<div class="wpage_contents">';
 					$this->show_aff_link();
 					echo '<a class="lockedLink nolink" href="#">Unlock page content</a>';
-					
+					echo '</div>';
 					return ob_get_clean();
 				}
 			}
